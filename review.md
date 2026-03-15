@@ -339,3 +339,97 @@ todos是QuerySet容器，和python中一样，空为False,否则为True
 到这里，再进入网站主页，就可以看到历史记录了。那么问题来了，现在所有的内容只能通过后台增加和删除，最后一步，做出网站内的用户交互页面，让用户可以增添记录和删除记录
 
 ---
+
+## 十一、制作用户交互功能
+
+### *1 add功能*
+我们首先处理信息的增加功能，即让用户可以添加数据，在这里，我们使用新的页面,并且调用django的表单模块
+
+#### 1. 增加模板文件作为增加时的网站页面
+```
+<body>
+    <h1>新建待办</h1>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {{ form.as_p }}
+        
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{% url 'todo_home' %}">取消</a>
+    </form>
+</body>
+```
+
+我们来简单解释一下这里的代码：  
+1. 首先`{% csrf_token %}`,是安全标识，否则网站无法打开
+2. 其次`{{ form.as_p }}`,这是表单的引入，将每一部分用`<p>`标签包裹
+3. 下面就是button和form的联动了，我们用一个表格来说明
+
+|button,type属性|form,method属性|说明|
+|---|---|---|
+|submit|post/get|submit触发表单向服务器发送请求，请求类型是post，还是get|
+|button|无需|button属性触发之后，激发html文件中js代码的执行|
+
+#### 2. 创建表单文件
+```
+class TodoForm(forms.ModelForm):
+
+    class Meta:
+        model = Todo  
+        fields = ['title', 'content']  
+        
+        <!-- 下面是对表单样式的设置，不是骨架 -->
+        labels = {
+            'title': '标题',
+            'content': '内容',
+        }
+        
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '请输入标题',
+                'maxlength': 200
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': '请输入详细内容',
+                'rows': 5
+            }),
+        }
+```
+相当于创建了一个“形如表单”的html，也就是不用你写完整的html，只需要调用form中封装的属性就可以，最后仍然会被转换成html渲染在页面上
+
+#### 3. 修改主页模板文件，并分配路由
+增加链接标签把新模板和主页用链接链接，随后在urls.py中为新页面分配路由
+
+#### 4. 修改视图函数
+```
+def add(request):
+    
+    if request.method == 'POST':
+        
+        form = TodoForm(request.POST)  
+        if form.is_valid():  
+            form.save()      
+            return redirect('todo_home')
+    else:
+        
+        form = TodoForm()
+    
+    
+    return render(request, 'test_app/todo_add.html', {'form': form})
+```
+
+我们来说明一下这个代码：
+1. `if request.method == 'POST'`  
+表示服务器接收到的是POST请求(这在模板文件中提到过，这里的post请求就来自于模板文件中的`<form>`标签中的`method='post'`属性)
+
+2. `form = TodoForm(request.POST)`  
+这里`request.POST`就是用户提交的内容，可以直接打印，这里`TodoForm`创建了这个类的一个对象,`()`内就是初始化的内容，这里就是用户所填的内容，左值form就是这个对象的名字，起别的也可以
+
+3. `form = TodoForm()`  
+这就是`else`的执行内容，创建对象，初始化为空
+
+4. `return render(request, 'test_app/todo_add.html', {'form': form})`  
+这是render函数，最后以键form在模板文件中调用函数中的form对象
