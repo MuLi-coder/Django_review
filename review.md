@@ -433,3 +433,43 @@ def add(request):
 
 4. `return render(request, 'test_app/todo_add.html', {'form': form})`  
 这是render函数，最后以键form在模板文件中调用函数中的form对象
+
+### *2 delete功能*
+首先，delete功能不需要新建页面，所以只需要在home文件中加上删除按钮就可以了
+
+#### 1. 修改主页模板文件
+在title后面加上删除图标
+```
+<a href="{% url 'todo_delete' todo.id %}" 
+    style="color: #dc3545; margin-left: 10px; font-size: 14px;"
+    onclick="return confirm('确定要删除「{{ todo.title }}」吗？')">
+    删除
+</a>
+```
+我们来看一下这个标记，其中有个部分  
+`href="{% url 'todo_delete' todo.id %}"`，这里`'todo_delete' todo.id`是在循环展示的时候就被替换成url，`todo.id`变成了数字
+`onclick="return confirm('确定要删除「{{ todo.title }}」吗？')"`  
+这是一个js代码，`onclick`表示当用户点击这个链接的时候，执行后面的js代码  
+`confirm()`的返回值为`True`或`False`，这是JS内置函数，弹出一个确认对话框，有两个选项，**确定** 和 **取消**，括号中的为提示文字，`{{todo.title}}`是调用视图函数中的`键todos`在模板文件中的`todo`循环变量的`title`属性
+
+#### 2. 分配路由
+加上：  
+`path('delete/<int:todo_id>/', views.delete, name='todo_delete')`
+
+这里的意思是把路径中出现在形如`delete/*/`中`*`位置的数字赋值给`todo_id`
+
+#### 3. 修改视图函数
+加上：
+```
+# 别忘了导入函数
+from django.shortcuts import get_object_or_404
+# 下面定义函数
+def delete(request, todo_id):
+    todo = get_object_or_404(Todo, id=todo_id)
+    todo.delete()
+    return redirect('todo_home')
+```
+
+这个函数有新的部分，我们来看一看：
+1. 首先参数多了一个`todo_id`
+2. `get_object_or_404(Todo,todo_id)`这是个函数,表示,在`Todo`类中寻找`id`为`todo_id`的那一项，如果找不到，返回`404`
