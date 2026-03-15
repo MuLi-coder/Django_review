@@ -24,7 +24,7 @@ cd进项目文件夹,然后执行
 ## 四、编辑视图函数
 进入test_app文件夹中的views.py
 
-编辑视图函数一般可以定义成：
+视图函数一般可以定义成：
 ```
 def home(request):
 	return render(request,'test_app/home.html')
